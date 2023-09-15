@@ -1,0 +1,29 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install rsync -y && sudo apt-get install openssh-server -y
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 2022 192.168.138.7 >> ~/.ssh/known_hosts
+          echo "$PRIVATE_DEPLOY_KEY_DEV" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "$ENV_DEV" > .env
+          yarn install
+          yarn build
+
+      - name: Deploy to Production
+        run: |
+          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa -p 2022" --rsync-path=/usr/bin/rsync --exclude='.git' --delete . root@192.168.138.7:~/clinic-api
+          ssh -i ~/.ssh/id_rsa root@192.168.138.7 -p 2022 "cd clinic-api && pm2 startOrRestart ecosystem.config.js --only clinic-api-dev"
