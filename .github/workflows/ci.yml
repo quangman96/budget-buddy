@@ -3,27 +3,33 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - master
+      - master2
 
 jobs:
-  deploy-production:
+  deploy_production:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install dependencies
+      - name: Set up SSH keys and dependencies
         run: |
           sudo apt-get update && sudo apt-get install rsync -y && sudo apt-get install openssh-server -y
           mkdir -p ~/.ssh
-          ssh-keyscan -p 2022 192.168.138.7 >> ~/.ssh/known_hosts
-          echo "$PRIVATE_DEPLOY_KEY_DEV" > ~/.ssh/id_rsa
+          echo "${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          echo "$ENV_DEV" > .env
-          yarn install
-          yarn build
+          ssh-keyscan -H 43.206.28.112 >> ~/.ssh/known_hosts
+          echo "${{ secrets.ENV_PRODUCTION_2 }}" > .env
+        env:
+          PRIVATE_DEPLOY_KEY_PROD_2: ${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}
+          ENV_PRODUCTION_2: ${{ secrets.ENV_PRODUCTION_2 }}
 
-      - name: Deploy to Production
+      - name: Deploy to the second server
         run: |
-          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa -p 2022" --rsync-path=/usr/bin/rsync --exclude='.git' --delete . root@192.168.138.7:~/clinic-api
-          ssh -i ~/.ssh/id_rsa root@192.168.138.7 -p 2022 "cd clinic-api && pm2 startOrRestart ecosystem.config.js --only clinic-api-dev"
+          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude='.git' --delete . ubuntu@43.206.28.112:~/clinic-test-cicd
+          ssh -i ~/.ssh/id_rsa "ubuntu@43.206.28.112" "cd clinic-test-cicd && mkdir loglog"
+
+    env:
+      PRIVATE_DEPLOY_KEY_PROD_2: ${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}
+      ENV_PRODUCTION_2: ${{ secrets.ENV_PRODUCTION_2 }}
