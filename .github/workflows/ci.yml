@@ -27,8 +27,8 @@ jobs:
 
       - name: Deploy to the second server
         run: |
-          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude='.git' --delete . ubuntu@43.206.28.112:~/clinic-test-cicd
-          ssh -i ~/.ssh/id_rsa "ubuntu@43.206.28.112" "cd clinic-test-cicd && sudo mkdir loglog"
+          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude='.git' --delete . ubuntu@43.206.28.112:~/clinic-test-cicd-1
+          ssh -i ~/.ssh/id_rsa "ubuntu@43.206.28.112" "cd clinic-test-cicd-1 && sudo mkdir loglog"
 
     env:
       PRIVATE_DEPLOY_KEY_PROD_2: ${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}
