@@ -29,4 +29,4 @@ jobs:
         run: CI= yarn build
 
       - name: Deploy to production
-        run: rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude={.git,node_modules} ./ ubuntu@1.2.3.4:/var/www/html/budget-buddy
+        run: rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude={.git,node_modules} ./ ubuntu@13.228.175.65:/var/www/html/budget-buddy
