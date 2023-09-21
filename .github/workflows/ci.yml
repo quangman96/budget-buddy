@@ -2,34 +2,31 @@ name: Deploy to Production
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
-  deploy_production:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Set up SSH keys and dependencies
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install rsync -y && sudo apt-get install openssh-server -y
+
+      - name: Set up SSH
         run: |
-          sudo apt-get update && sudo apt-get install rsync -y && sudo apt-get install openssh-server -y
           mkdir -p ~/.ssh
-          echo "${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.PROD_SSH }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 43.206.28.112 >> ~/.ssh/known_hosts
-          echo "${{ secrets.ENV_PRODUCTION_2 }}" > .env
-        env:
-          PRIVATE_DEPLOY_KEY_PROD_2: ${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}
-          ENV_PRODUCTION_2: ${{ secrets.ENV_PRODUCTION_2 }}
+          ssh-keyscan -H 13.228.175.65 >> ~/.ssh/known_hosts
+          echo "${{ secrets.PROD_ENV }}" > .env
 
-      - name: Deploy to the second server
-        run: |
-          rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude='.git' --delete . ubuntu@43.206.28.112:~/clinic-test-cicd-1
-          ssh -i ~/.ssh/id_rsa "ubuntu@43.206.28.112" "cd clinic-test-cicd-1 && sudo mkdir loglog"
+      - name: Install yarn dependencies
+        run: yarn install
 
-    env:
-      PRIVATE_DEPLOY_KEY_PROD_2: ${{ secrets.PRIVATE_DEPLOY_KEY_PROD_2 }}
-      ENV_PRODUCTION_2: ${{ secrets.ENV_PRODUCTION_2 }}
+      - name: Build the application
+        run: CI= yarn build
+
+      - name: Deploy to production
+        run: rsync --progress -avzh -e "ssh -i ~/.ssh/id_rsa" --rsync-path="sudo rsync" --exclude={.git,node_modules} ./ ubuntu@1.2.3.4:/var/www/html/budget-buddy
